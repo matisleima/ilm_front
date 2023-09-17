@@ -4,7 +4,7 @@
       <div class="row">
         <div class="col">
           <div class="input-group mb-3">
-            <input v-model="cityName" type="text" class="form-control mt-5" @keydown.enter="getWeatherByName(cityName)"
+            <input v-model="cityName" type="text" class="form-control mt-5" @keydown.enter="getWeatherManuallyByName(cityName)"
                    placeholder="Sisesta linna nimi"
                    aria-label="Username"
                    aria-describedby="basic-addon1">
