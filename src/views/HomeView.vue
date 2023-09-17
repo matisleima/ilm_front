@@ -4,16 +4,17 @@
       <div class="row">
         <div class="col">
           <div class="input-group mb-3">
-            <input v-model="cityName" type="text" class="form-control" @keydown.enter="getWeatherByName"
+            <input v-model="cityName" type="text" class="form-control" @keydown.enter="getWeatherByName(cityName)"
                    placeholder="Sisesta linna nimi"
                    aria-label="Username"
                    aria-describedby="basic-addon1">
           </div>
 
-          <button type="button" class="btn btn-info" @click="getWeatherByName">Mis ilm on?</button>
-          <button type="button" class="btn btn-info" @click="">Hakka statistikat koguma</button>
+          <button type="button" class="btn btn-info" @click="getWeatherByName(cityName)">Mis
+            ilm on?
+          </button>
 
-          <table class="table table-striped" v-show="(weatherResponse.main.temp > 0)">
+          <table v-show="weatherResponse.main.humidity > 0" class="table table-striped" aria-describedby="">
             <thead>
             <tr>
               <th scope="col">Linn</th>
@@ -24,28 +25,39 @@
             </thead>
             <tbody>
             <tr>
-              <td>{{ coordinatesResponse.name }}</td>
-              <td>{{ tempCelsiusRounded }}°C</td>
+              <td>{{ weatherResponse.name }}</td>
+              <td>{{ weatherResponse.main.temp }}°C</td>
               <td>{{ weatherResponse.wind.speed }} m/s</td>
               <td>{{ weatherResponse.main.humidity }}%</td>
             </tr>
             </tbody>
           </table>
+
+          <button v-show="weatherResponse.main.humidity > 0" type="button" class="btn btn-info"
+                  @click="addNameToRecordingCities">Hakka selle linna andmeid
+            salvestama
+          </button>
+
+          <div v-show="warning.length > 0" class="alert alert-danger" role="alert">
+            {{ warning }}
+          </div>
         </div>
 
         <div class="col">
-          <div class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1"
-                    data-bs-toggle="dropdown" aria-expanded="false">
-              Vali linn
-            </button>
-            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-              <li><a class="dropdown-item" href="#">kõik linnad</a></li>
-            </ul>
-          </div>
-          <button type="button" class="btn btn-info" @click="">Lõpeta statistika kogumine</button>
+          <select v-model="selectedCity" @change="getRecordedWeatherData" class="form-select"
+                  aria-label="Default select example">
+            <option value="">Kõik linnad</option>
+            <option v-for="city in recordingCities">
+              {{ city.city }}
+            </option>
+          </select>
+          <button type="button" class="btn btn-info" @click="removeNameFromRecordingCities(selectedCity)">Lõpeta valitud
+            linna andmete salvestamine
+          </button>
+          <button type="button" class="btn btn-info" @click="deleteRecordedData">Kustuta salvestatud andmed
+          </button>
 
-          <table class="table table-striped">
+          <table v-if="recordedDataExists" class="table table-striped" aria-describedby="">
             <thead>
             <tr>
               <th scope="col">Linn</th>
@@ -56,12 +68,12 @@
             </tr>
             </thead>
             <tbody>
-            <tr>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
+            <tr v-for="statistic in statisticsResponse" :key="statisticsResponse.time">
+              <td>{{ statistic.city }}</td>
+              <td>{{ statistic.temp }}°C</td>
+              <td>{{ statistic.wind }} m/s</td>
+              <td>{{ statistic.humidity }}%</td>
+              <td>{{ statistic.time }}</td>
             </tr>
             </tbody>
           </table>
@@ -72,81 +84,164 @@
 </template>
 
 <script>
-// TODO: esimesel klikil ei lähe uue linna koordinaadid teele, vastus tuleb vana linna koordinaatidega. alles
-// TODO: teisel klikil lähevad uue linna nimega
-
 export default {
   name: 'HomeView',
   data() {
     return {
       apiKey: '160cd4ad5dbf4da0d772ab9a8bb1fa00',
       queryTime: 0,
-      cityName: '',
+      cityName: '', //lahtrisse trükitud
+      selectedCity: '', //rippmenüüst valitud
+      emptyCity: '',
+      recordingCities: [
+        {
+          id: 0,
+          city: ''
+        }
+      ],
+      warning: '',
       tempCelsiusRounded: 0,
+      recordedDataExists: false,
       weatherResponse: {
         main: {
           temp: 0,
-          humidity: 0,
+          humidity: 0
         },
         wind: {
           speed: 0,
         },
         dt: 0,
-        timezone: 0,
-      },
-      coordinatesResponse: {
         name: '',
-        lat: 99,
-        lon: 99,
-      }
+      },
+      statisticsResponse: [
+        {
+          id: 0,
+          city: '',
+          temp: 0,
+          wind: 0,
+          humidity: 0,
+          time: ''
+        }
+      ]
     }
   },
   methods: {
-    async getWeatherByName() {
-      await this.getCoordinatesByLocationName()
-      await this.getWeatherDataByCoordinates()
-      this.formatTime()
-      this.formatTemperature()
-    },
-    getCoordinatesByLocationName() {
-      const url = 'http://api.openweathermap.org/geo/1.0/direct'
-      const citiesLimit = 1
-      this.$http.get(url, {
+    getWeatherByName(cityName) {
+      this.resetWarning()
+      this.$http.get('https://api.openweathermap.org/data/2.5/weather', {
             params: {
-              q: this.cityName,
-              limit: citiesLimit,
+              q: cityName,
+              units: 'metric',
               appid: this.apiKey
             }
           }
       ).then(response => {
-        this.coordinatesResponse = response.data[0]
+        this.weatherResponse = response.data;
+        let unixTimestamp = this.weatherResponse.dt
+        let date = new Date(unixTimestamp * 1000)
+        this.queryTime = date.toLocaleTimeString()
       }).catch(error => {
-        const errorResponseBody = error.response.data
+        this.warning = 'Sellist linna pole olemas!'
       })
     },
-    getWeatherDataByCoordinates() {
-      const url = 'http://api.openweathermap.org/data/2.5/weather'
-      this.$http.get(url, {
+    resetWarning() {
+      this.warning = ''
+    },
+    addNameToRecordingCities() {
+      if (this.weatherResponse.name.length !== 0) {
+        this.saveCityName()
+        alert('Alustame selle linna ilmaandmete kogumist!')
+        this.resetThisCityName()
+      } else {
+        alert('Sisesta linna nimi!')
+      }
+      this.getRecordingCities()
+    },
+    saveCityName() {
+      this.$http.post("/add", null, {
+        params: {
+          cityName: this.weatherResponse.name
+        }
+      })
+    },
+    resetThisCityName() {
+      this.cityName = ''
+    },
+    getRecordingCities() {
+      this.$http.get("/get-cities")
+          .then(response => {
+            this.recordingCities = response.data
+          })
+    },
+    removeNameFromRecordingCities() {
+      if (this.selectedCity.length === 0) {
+        alert('Vali linn!')
+        return
+      }
+      this.deleteCityName();
+      alert('Selle linna ilmaandmeid enam ei koguta!')
+      this.resetSelectedCity()
+      this.getRecordingCities()
+      this.getRecordedWeatherData()
+    },
+    deleteCityName() {
+      this.$http.delete("/remove", {
             params: {
-              lat: this.coordinatesResponse.lat,
-              lon: this.coordinatesResponse.lon,
-              appid: this.apiKey
+              cityName: this.selectedCity
+            }
+          }
+      )
+    },
+    async deleteRecordedData() {
+      await this.$http.delete("/delete")
+      this.recordedDataExists = false
+      this.getRecordedWeatherData()
+    },
+    resetSelectedCity() {
+      this.selectedCity = ''
+    },
+    getAndSaveRegularWeatherByNames() { //REGULAARNE TEGEVUS
+      setInterval(async () => {
+        for (let cityObj of this.recordingCities) {
+          let cityName = cityObj.city
+          await this.getWeatherByName(cityName)
+          await this.recordWeatherData(cityName)
+          this.getRecordedWeatherData()
+        }
+      }, 20000);
+    },
+    recordWeatherData(cityName) {
+      this.$http.post("/record", null, {
+            params: {
+              city: cityName,
+              temp: this.weatherResponse.main.temp,
+              wind: this.weatherResponse.wind.speed,
+              humidity: this.weatherResponse.main.humidity,
+              time: String(this.queryTime)
             }
           }
       ).then(response => {
-        this.weatherResponse = response.data
       }).catch(error => {
-        const errorResponseBody = error.response.data
       })
     },
-    formatTime() {
-      let unixTimestamp = this.weatherResponse.dt
-      let date = new Date(unixTimestamp * 1000)
-      this.queryTime = date.toLocaleTimeString()
+    getRecordedWeatherData() {
+      this.$http.get("/show", {
+            params: {
+              city: this.selectedCity
+            }
+          }
+      ).then(response => {
+        if (response.data.length > 0) {
+          this.recordedDataExists = true
+          this.statisticsResponse = response.data
+        }
+      })
     },
-    formatTemperature() {
-      this.tempCelsiusRounded = (this.weatherResponse.main.temp - 273.15).toFixed(1)
-    },
+  },
+  mounted() {
+    this.getAndSaveRegularWeatherByNames();
+    this.getRecordingCities()
+    this.getRecordedWeatherData()
   }
 }
 </script>
