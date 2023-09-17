@@ -231,7 +231,7 @@ export default {
           await this.recordWeatherData(cityName)
           this.getRecordedWeatherData()
         }
-      }, 10000);
+      }, 900000);
     },
     recordWeatherData(cityName) {
       return this.$http.post("/record", null, {
