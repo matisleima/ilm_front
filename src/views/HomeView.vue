@@ -4,7 +4,7 @@
       <div class="row">
         <div class="col">
           <div class="input-group mb-3">
-            <input v-model="cityName" type="text" class="form-control" @keydown.enter="getWeatherByName(cityName)"
+            <input v-model="cityName" type="text" class="form-control mt-5" @keydown.enter="getWeatherByName(cityName)"
                    placeholder="Sisesta linna nimi"
                    aria-label="Username"
                    aria-describedby="basic-addon1">
@@ -44,17 +44,17 @@
         </div>
 
         <div class="col">
-          <select v-model="selectedCity" @change="getRecordedWeatherData" class="form-select"
+          <select v-model="selectedCity" @change="getRecordedWeatherData" class="form-select mt-5"
                   aria-label="Default select example">
             <option value="">Kõik linnad</option>
             <option v-for="city in recordingCities">
               {{ city.city }}
             </option>
           </select>
-          <button type="button" class="btn btn-info" @click="removeNameFromRecordingCities(selectedCity)">Lõpeta valitud
+          <button type="button" class="btn btn-info m-3" @click="removeNameFromRecordingCities(selectedCity)">Lõpeta valitud
             linna andmete salvestamine
           </button>
-          <button type="button" class="btn btn-info" @click="deleteRecordedData">Kustuta salvestatud andmed
+          <button type="button" class="btn btn-outline-danger" @click="deleteRecordedData">Kustuta salvestatud andmed
           </button>
 
           <table v-if="recordedDataExists" class="table table-striped" aria-describedby="">
@@ -143,6 +143,7 @@ export default {
       }).catch(error => {
         this.warning = 'Sellist linna pole olemas!'
       })
+      console.log(`Fetching weather for ${cityName}, got response:`, this.weatherResponse);
     },
     resetWarning() {
       this.warning = ''
@@ -208,7 +209,7 @@ export default {
           await this.recordWeatherData(cityName)
           this.getRecordedWeatherData()
         }
-      }, 20000);
+      }, 70000);
     },
     recordWeatherData(cityName) {
       this.$http.post("/record", null, {
@@ -239,8 +240,8 @@ export default {
     },
   },
   mounted() {
-    this.getAndSaveRegularWeatherByNames();
     this.getRecordingCities()
+    this.getAndSaveRegularWeatherByNames();
     this.getRecordedWeatherData()
   }
 }
