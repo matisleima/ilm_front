@@ -10,7 +10,7 @@
                    aria-describedby="basic-addon1">
           </div>
 
-          <button type="button" class="btn btn-info" @click="getWeatherByName(cityName)">Mis
+          <button type="button" class="btn btn-info" @click="getWeatherManuallyByName(cityName)">Mis
             ilm on?
           </button>
 
@@ -25,10 +25,10 @@
             </thead>
             <tbody>
             <tr>
-              <td>{{ weatherResponse.name }}</td>
-              <td>{{ weatherResponse.main.temp }}°C</td>
-              <td>{{ weatherResponse.wind.speed }} m/s</td>
-              <td>{{ weatherResponse.main.humidity }}%</td>
+              <td>{{ manualWeatherResponse.name }}</td>
+              <td>{{ manualWeatherResponse.main.temp }}°C</td>
+              <td>{{ manualWeatherResponse.wind.speed }} m/s</td>
+              <td>{{ manualWeatherResponse.main.humidity }}%</td>
             </tr>
             </tbody>
           </table>
@@ -51,7 +51,8 @@
               {{ city.city }}
             </option>
           </select>
-          <button type="button" class="btn btn-info m-3" @click="removeNameFromRecordingCities(selectedCity)">Lõpeta valitud
+          <button type="button" class="btn btn-info m-3" @click="removeNameFromRecordingCities(selectedCity)">Lõpeta
+            valitud
             linna andmete salvestamine
           </button>
           <button type="button" class="btn btn-outline-danger" @click="deleteRecordedData">Kustuta salvestatud andmed
@@ -113,6 +114,17 @@ export default {
         dt: 0,
         name: '',
       },
+      manualWeatherResponse: {
+        main: {
+          temp: 0,
+          humidity: 0
+        },
+        wind: {
+          speed: 0,
+        },
+        dt: 0,
+        name: '',
+      },
       statisticsResponse: [
         {
           id: 0,
@@ -126,9 +138,8 @@ export default {
     }
   },
   methods: {
-    getWeatherByName(cityName) {
-      this.resetWarning()
-      this.$http.get('https://api.openweathermap.org/data/2.5/weather', {
+    getWeatherByName(cityName) { //automeeritud
+      return this.$http.get('https://api.openweathermap.org/data/2.5/weather', {
             params: {
               q: cityName,
               units: 'metric',
@@ -137,13 +148,24 @@ export default {
           }
       ).then(response => {
         this.weatherResponse = response.data;
-        let unixTimestamp = this.weatherResponse.dt
-        let date = new Date(unixTimestamp * 1000)
-        this.queryTime = date.toLocaleTimeString()
       }).catch(error => {
-        this.warning = 'Sellist linna pole olemas!'
+        this.warning = 'Palun täpsusta otsingusõna!'
       })
-      console.log(`Fetching weather for ${cityName}, got response:`, this.weatherResponse);
+    },
+    getWeatherManuallyByName(cityName) { //manuaalne
+      this.resetWarning()
+      return this.$http.get('https://api.openweathermap.org/data/2.5/weather', {
+            params: {
+              q: cityName,
+              units: 'metric',
+              appid: this.apiKey
+            }
+          }
+      ).then(response => {
+        this.manualWeatherResponse = response.data;
+      }).catch(error => {
+        this.warning = 'Palun täpsusta otsingusõna!'
+      })
     },
     resetWarning() {
       this.warning = ''
@@ -209,21 +231,18 @@ export default {
           await this.recordWeatherData(cityName)
           this.getRecordedWeatherData()
         }
-      }, 70000);
+      }, 10000);
     },
     recordWeatherData(cityName) {
-      this.$http.post("/record", null, {
+      return this.$http.post("/record", null, {
             params: {
               city: cityName,
               temp: this.weatherResponse.main.temp,
               wind: this.weatherResponse.wind.speed,
               humidity: this.weatherResponse.main.humidity,
-              time: String(this.queryTime)
             }
           }
-      ).then(response => {
-      }).catch(error => {
-      })
+      )
     },
     getRecordedWeatherData() {
       this.$http.get("/show", {
