@@ -33,7 +33,7 @@
             </tbody>
           </table>
 
-          <button v-show="weatherResponse.main.humidity > 0" type="button" class="btn btn-info"
+          <button v-show="manualWeatherResponse.main.humidity > 0" type="button" class="btn btn-info"
                   @click="addNameToRecordingCities">Hakka selle linna andmeid
             salvestama
           </button>
@@ -171,7 +171,7 @@ export default {
       this.warning = ''
     },
     addNameToRecordingCities() {
-      if (this.weatherResponse.name.length !== 0) {
+      if (this.manualWeatherResponse.name.length !== 0) {
         this.saveCityName()
         alert('Alustame selle linna ilmaandmete kogumist!')
         this.resetThisCityName()
@@ -183,7 +183,7 @@ export default {
     saveCityName() {
       this.$http.post("/add", null, {
         params: {
-          cityName: this.weatherResponse.name
+          cityName: this.manualWeatherResponse.name
         }
       })
     },
@@ -231,7 +231,7 @@ export default {
           await this.recordWeatherData(cityName)
           this.getRecordedWeatherData()
         }
-      }, 10000);
+      }, 900000);
     },
     recordWeatherData(cityName) {
       return this.$http.post("/record", null, {
