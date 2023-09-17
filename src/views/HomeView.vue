@@ -14,7 +14,7 @@
             ilm on?
           </button>
 
-          <table v-show="weatherResponse.main.humidity > 0" class="table table-striped" aria-describedby="">
+          <table v-show="manualWeatherResponse.main.humidity > 0" class="table" aria-describedby="">
             <thead>
             <tr>
               <th scope="col">Linn</th>
@@ -231,7 +231,7 @@ export default {
           await this.recordWeatherData(cityName)
           this.getRecordedWeatherData()
         }
-      }, 900000);
+      }, 10000);
     },
     recordWeatherData(cityName) {
       return this.$http.post("/record", null, {
