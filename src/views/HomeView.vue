@@ -135,7 +135,7 @@ export default {
   methods: {
     getManualWeather(cityName) { //manuaalne
       this.resetWarning()
-      this.$http.get("/manual/get-weather", {
+      this.$http.get("/get-weather", {
             params: {
               city: cityName
             }
@@ -148,7 +148,7 @@ export default {
       })
     },
     getAutomaticWeather(cityName) { //automeeritud
-      return this.$http.get('/manual/get-weather', {
+      return this.$http.get('/get-weather', {
         params: {
           city: cityName
         }
@@ -238,7 +238,7 @@ export default {
       )
     },
     getRecordedWeatherData() {
-      this.$http.get("/show", {
+      this.$http.get("/get-statistics", {
             params: {
               city: this.selectedCity
             }
