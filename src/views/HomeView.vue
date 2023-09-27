@@ -89,8 +89,8 @@ export default {
   name: 'HomeView',
   data() {
     return {
-      cityName: '', //lahtrisse trükitud
-      selectedCity: '', //rippmenüüst valitud
+      cityName: '', //input
+      selectedCity: '', //dropdown
       recordingCities: [
         {
           id: 0,
