@@ -4,13 +4,13 @@
       <div class="row">
         <div class="col">
           <div class="input-group mb-3">
-            <input v-model="cityName" type="text" class="form-control mt-5" @keydown.enter="getWeatherManuallyByName(cityName)"
+            <input v-model="cityName" type="text" class="form-control mt-5" @keydown.enter="getManualWeather(cityName)"
                    placeholder="Sisesta linna nimi"
                    aria-label="Username"
                    aria-describedby="basic-addon1">
           </div>
 
-          <button type="button" class="btn btn-info" @click="getWeatherManuallyByName(cityName)">Mis
+          <button type="button" class="btn btn-info" @click="getManualWeather(cityName)">Mis
             ilm on?
           </button>
 
@@ -89,11 +89,8 @@ export default {
   name: 'HomeView',
   data() {
     return {
-      apiKey: '160cd4ad5dbf4da0d772ab9a8bb1fa00',
-      queryTime: 0,
       cityName: '', //lahtrisse trükitud
       selectedCity: '', //rippmenüüst valitud
-      emptyCity: '',
       recordingCities: [
         {
           id: 0,
@@ -111,7 +108,6 @@ export default {
         wind: {
           speed: 0,
         },
-        dt: 0,
         name: '',
       },
       manualWeatherResponse: {
@@ -122,7 +118,6 @@ export default {
         wind: {
           speed: 0,
         },
-        dt: 0,
         name: '',
       },
       statisticsResponse: [
@@ -138,33 +133,31 @@ export default {
     }
   },
   methods: {
-    getWeatherByName(cityName) { //automeeritud
-      return this.$http.get('https://api.openweathermap.org/data/2.5/weather', {
+    getManualWeather(cityName) { //manuaalne
+      this.resetWarning()
+      this.$http.get("/manual/get-weather", {
             params: {
-              q: cityName,
-              units: 'metric',
-              appid: this.apiKey
+              city: cityName
             }
+          }
+      ).then(response => {
+        this.manualWeatherResponse = response.data
+      }).catch(error => {
+        this.warning = 'Palun täpsusta otsingusõna!'
+        setTimeout(() => {this.warning = ''}, 5000)
+      })
+    },
+    getAutomaticWeather(cityName) { //automeeritud
+      return this.$http.get('/manual/get-weather', {
+        params: {
+          city: cityName
+        }
           }
       ).then(response => {
         this.weatherResponse = response.data;
       }).catch(error => {
-        this.warning = 'Palun täpsusta otsingusõna!'
-      })
-    },
-    getWeatherManuallyByName(cityName) { //manuaalne
-      this.resetWarning()
-      return this.$http.get('https://api.openweathermap.org/data/2.5/weather', {
-            params: {
-              q: cityName,
-              units: 'metric',
-              appid: this.apiKey
-            }
-          }
-      ).then(response => {
-        this.manualWeatherResponse = response.data;
-      }).catch(error => {
-        this.warning = 'Palun täpsusta otsingusõna!'
+        this.warning = 'Automaatse ilmapäringuga tekkis probleem!'
+        setTimeout(() => {this.warning = ''}, 5000)
       })
     },
     resetWarning() {
@@ -227,7 +220,7 @@ export default {
       setInterval(async () => {
         for (let cityObj of this.recordingCities) {
           let cityName = cityObj.city
-          await this.getWeatherByName(cityName)
+          await this.getAutomaticWeather(cityName)
           await this.recordWeatherData(cityName)
           this.getRecordedWeatherData()
         }
