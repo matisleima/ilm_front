@@ -179,7 +179,6 @@ export default {
           cityName: this.manualWeatherResponse.name
         }
       }).catch(error => {
-        console.log('Error data:', error.response.status)
         if (error.response.status === 500) {
           this.warning = 'Selle linna andmeid juba salvestatakse!'
           setTimeout(() => {this.warning = ''}, 5000)
