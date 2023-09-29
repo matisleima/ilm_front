@@ -38,7 +38,7 @@
             salvestama
           </button>
 
-          <div v-show="warning.length > 0" class="alert alert-danger" role="alert">
+          <div v-show="warning.length > 0" class="alert alert-danger m-3" role="alert">
             {{ warning }}
           </div>
         </div>
@@ -177,6 +177,12 @@ export default {
       this.$http.post("/add", null, {
         params: {
           cityName: this.manualWeatherResponse.name
+        }
+      }).catch(error => {
+        console.log('Error data:', error.response.status)
+        if (error.response.status === 500) {
+          this.warning = 'Selle linna andmeid juba salvestatakse!'
+          setTimeout(() => {this.warning = ''}, 5000)
         }
       })
     },
